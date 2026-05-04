@@ -1,0 +1,47 @@
+package com.example.identify_service.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDate;
+
+import com.example.identify_service.dto.request.UserCreationRequest;
+import com.example.identify_service.entity.User;
+import com.example.identify_service.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Test
+    void createUserMapsDobFromRequest() {
+        UserService userService = new UserService();
+        ReflectionTestUtils.setField(userService, "userRepository", userRepository);
+
+        UserCreationRequest request = new UserCreationRequest();
+        request.setUsername("jane");
+        request.setPassword("secret");
+        request.setFirstName("Jane");
+        request.setLastName("Doe");
+        request.setDob(LocalDate.of(2000, 1, 2));
+
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User createdUser = userService.createUser(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
+        assertThat(createdUser.getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
+    }
+}
