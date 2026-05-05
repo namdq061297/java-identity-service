@@ -3,7 +3,7 @@ package com.example.identify_service.service;
 import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.dto.request.UserUpdateRequest;
 import com.example.identify_service.entity.User;
-import com.example.identify_service.exception.UserNotFoundException;
+import com.example.identify_service.exception.UserExceptions;
 import com.example.identify_service.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,10 @@ public class UserService {
     private UserRepository userRepository;
 
     public User createUser(UserCreationRequest req) {
+        if (userRepository.existsByUsername(req.getUsername())) {
+            throw new UserExceptions.UsernameAlreadyExistsException(req.getUsername());
+        }
+
         User user = new User();
         user.setUsername(req.getUsername());
         user.setPassword(req.getPassword());
@@ -33,12 +37,12 @@ public class UserService {
 
     public User getUserById(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new UserExceptions.UserNotFoundException(id));
     }
 
     public User updateUser(String id, @NonNull UserUpdateRequest req) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new UserExceptions.UserNotFoundException(id));
 
 
         user.setPassword(req.getPassword());
@@ -51,7 +55,7 @@ public class UserService {
 
     public void deleteUser(String id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new UserExceptions.UserNotFoundException(id));
         userRepository.delete(user);
     }
 }
