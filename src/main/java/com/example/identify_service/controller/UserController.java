@@ -1,5 +1,6 @@
 package com.example.identify_service.controller;
 
+import com.example.identify_service.dto.request.ApiResponse;
 import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.dto.request.UserUpdateRequest;
 import com.example.identify_service.entity.User;
@@ -17,8 +18,10 @@ public class UserController {
   private UserService userService;
 
   @PostMapping
-  public User createUser(@RequestBody @Valid UserCreationRequest user) {
-    return userService.createUser(user);
+  public ApiResponse<User> createUser(@RequestBody @Valid UserCreationRequest user) {
+    ApiResponse<User> response = new ApiResponse<>();
+    response.setResult(userService.createUser(user));
+    return response;
   }
 
   @GetMapping

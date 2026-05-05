@@ -1,5 +1,6 @@
 package com.example.identify_service.exception;
 
+import com.example.identify_service.dto.request.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -7,43 +8,46 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.Map;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(UserExceptions.UserNotFoundException.class)
-  public ResponseEntity<Map<String, Object>> handleUserNotFound(UserExceptions.UserNotFoundException ex) {
-    return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ApiResponse<Void>> handleUncategorizedException(Exception ex) {
+    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCode.UNCATEGORIZED_ERROR.getCode(),
+        ErrorCode.UNCATEGORIZED_ERROR.getMessage());
   }
 
-  @ExceptionHandler(UserExceptions.UsernameAlreadyExistsException.class)
-  public ResponseEntity<Map<String, Object>> handleUsernameAlreadyExists(UserExceptions.UsernameAlreadyExistsException ex) {
-    return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
+  @ExceptionHandler(AppException.class)
+  public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
+    ErrorCode errorCode = ex.getErrorCode();
+    HttpStatus status = switch (errorCode) {
+      case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
+      case USER_EXISTED -> HttpStatus.CONFLICT;
+      default -> HttpStatus.INTERNAL_SERVER_ERROR;
+    };
+    return buildErrorResponse(status, errorCode.getCode(), errorCode.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, Object>> handleValidationError(MethodArgumentNotValidException ex) {
+  public ResponseEntity<ApiResponse<Void>> handleValidationError(MethodArgumentNotValidException ex) {
     String message = "Invalid request body";
     if (ex.getBindingResult().getFieldError() != null && ex.getBindingResult().getFieldError().getDefaultMessage() != null) {
       message = ex.getBindingResult().getFieldError().getDefaultMessage();
     }
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.value(), message);
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<Map<String, Object>> handleMalformedBody(HttpMessageNotReadableException ex) {
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid request body");
+  public ResponseEntity<ApiResponse<Void>> handleMalformedBody(HttpMessageNotReadableException ex) {
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.value(), "Invalid request body");
   }
 
-  private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatus status, String message) {
-    return ResponseEntity.status(status).body(Map.of(
-        "timestamp", Instant.now().toString(),
-        "status", status.value(),
-        "error", status.getReasonPhrase(),
-        "message", message
-    ));
+  private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatus status, int code, String message) {
+    ApiResponse<Void> response = new ApiResponse<>();
+    response.setCode(code);
+    response.setMessage(message);
+    return ResponseEntity.status(status).body(response);
   }
 }
 

@@ -11,7 +11,8 @@ import java.time.LocalDate;
 
 import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.entity.User;
-import com.example.identify_service.exception.UserExceptions;
+import com.example.identify_service.exception.AppException;
+import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,8 +66,10 @@ class UserServiceTest {
         when(userRepository.existsByUsername("jane")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.createUser(request))
-                .isInstanceOf(UserExceptions.UsernameAlreadyExistsException.class)
-                .hasMessage("Username already exists: jane");
+                .isInstanceOfSatisfying(AppException.class, ex -> {
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USER_EXISTED);
+                    assertThat(ex.getMessage()).isEqualTo("Username already exists");
+                });
 
         verify(userRepository).existsByUsername("jane");
         verify(userRepository, never()).save(any(User.class));
