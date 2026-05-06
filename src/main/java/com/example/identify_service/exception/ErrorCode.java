@@ -2,6 +2,7 @@ package com.example.identify_service.exception;
 
 public enum ErrorCode {
   UNCATEGORIZED_ERROR(9999, "Uncategorized error"),
+  INVALID_MESSAGE_KEY(1111, "Invalid message key"),
   USER_NOT_FOUND(1001, "User not found"),
   USER_EXISTED(1002, "Username already exists"),
   INVALID_PASSWORD(1003, "Password must be at least 8 characters long"),

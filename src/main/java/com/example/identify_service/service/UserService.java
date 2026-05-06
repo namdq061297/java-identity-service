@@ -2,9 +2,11 @@ package com.example.identify_service.service;
 
 import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.dto.request.UserUpdateRequest;
+import com.example.identify_service.dto.response.UserResponse;
 import com.example.identify_service.entity.User;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
+import com.example.identify_service.mapper.UserMapper;
 import com.example.identify_service.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,41 +19,39 @@ public class UserService {
   @Autowired
   private UserRepository userRepository;
 
-  public User createUser(UserCreationRequest req) {
+  @Autowired
+  private UserMapper userMapper;
+
+  public UserResponse createUser(UserCreationRequest req) {
     if (userRepository.existsByUsername(req.getUsername())) {
       throw new AppException(ErrorCode.USER_EXISTED);
     }
 
-    User user = new User();
-    user.setUsername(req.getUsername());
-    user.setPassword(req.getPassword());
-    user.setFirstName(req.getFirstName());
-    user.setLastName(req.getLastName());
-    user.setDob(req.getDob());
+    User user = userMapper.toUserDTO(req);
 
-    return userRepository.save(user);
+    return userMapper.toUserResponse(userRepository.save(user));
   }
 
   public List<User> getUsers() {
     return userRepository.findAll();
   }
 
-  public User getUserById(String id) {
-    return userRepository.findById(id)
-        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+  public UserResponse getUserById(String id) {
+    return userMapper.toUserResponse(userRepository.findById(id)
+        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
   }
 
-  public User updateUser(String id, @NonNull UserUpdateRequest req) {
+  public UserResponse updateUser(String id, @NonNull UserUpdateRequest req) {
     User user = userRepository.findById(id)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+    //    user.setFirstName(req.getFirstName());
+    //    user.setLastName(req.getLastName());
+    //    user.setDob(req.getDob());
 
-    user.setPassword(req.getPassword());
-    user.setFirstName(req.getFirstName());
-    user.setLastName(req.getLastName());
-    user.setDob(req.getDob());
+    userMapper.updateUser(user, req);
 
-    return userRepository.save(user);
+    return userMapper.toUserResponse(userRepository.save(user));
   }
 
   public void deleteUser(String id) {

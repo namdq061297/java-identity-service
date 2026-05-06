@@ -47,7 +47,12 @@ class GlobalExceptionHandler {
 
   private ErrorCode resolveErrorCode(String errorKey) {
     try {
-      return ErrorCode.valueOf(errorKey);
+      ErrorCode errorCode = ErrorCode.INVALID_MESSAGE_KEY;
+      try {
+        errorCode = ErrorCode.valueOf(errorKey);
+      } catch (IllegalArgumentException e) {
+      }
+      return errorCode;
     } catch (IllegalArgumentException ignored) {
       return ErrorCode.INVALID_REQUEST;
     }

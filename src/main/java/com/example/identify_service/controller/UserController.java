@@ -3,6 +3,7 @@ package com.example.identify_service.controller;
 import com.example.identify_service.dto.request.ApiResponse;
 import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.dto.request.UserUpdateRequest;
+import com.example.identify_service.dto.response.UserResponse;
 import com.example.identify_service.entity.User;
 import com.example.identify_service.service.UserService;
 import jakarta.validation.Valid;
@@ -18,8 +19,8 @@ public class UserController {
   private UserService userService;
 
   @PostMapping
-  public ApiResponse<User> createUser(@RequestBody @Valid UserCreationRequest user) {
-    ApiResponse<User> response = new ApiResponse<>();
+  public ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest user) {
+    ApiResponse<UserResponse> response = new ApiResponse<>();
     response.setResult(userService.createUser(user));
     return response;
   }
@@ -30,13 +31,15 @@ public class UserController {
   }
 
   @GetMapping("/{id}")
-  public User getUserById(@PathVariable String id) {
+  public UserResponse getUserById(@PathVariable String id) {
     return userService.getUserById(id);
   }
 
   @PutMapping("/{id}")
-  public User updateUser(@PathVariable String id, @RequestBody UserUpdateRequest user) {
-    return userService.updateUser(id, user);
+  public ApiResponse<UserResponse> updateUser(@PathVariable String id, @RequestBody @Valid UserUpdateRequest user) {
+    ApiResponse<UserResponse> response = new ApiResponse<>();
+    response.setResult(userService.updateUser(id, user));
+    return response;
   }
 
   @DeleteMapping("/{id}")
