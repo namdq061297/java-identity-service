@@ -8,19 +8,23 @@ import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.mapper.UserMapper;
 import com.example.identify_service.repository.UserRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserService {
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private UserMapper userMapper;
+  UserRepository userRepository;
+  UserMapper userMapper;
 
   public UserResponse createUser(UserCreationRequest req) {
     if (userRepository.existsByUsername(req.getUsername())) {
@@ -28,6 +32,8 @@ public class UserService {
     }
 
     User user = userMapper.toUserDTO(req);
+    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+    user.setPassword(passwordEncoder.encode(req.getPassword()));
 
     return userMapper.toUserResponse(userRepository.save(user));
   }

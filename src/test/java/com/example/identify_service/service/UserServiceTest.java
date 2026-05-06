@@ -21,7 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -34,9 +33,7 @@ class UserServiceTest {
 
     @Test
     void createUserMapsDobFromRequest() {
-        UserService userService = new UserService();
-        ReflectionTestUtils.setField(userService, "userRepository", userRepository);
-        ReflectionTestUtils.setField(userService, "userMapper", userMapper);
+        UserService userService = new UserService(userRepository, userMapper);
 
         UserCreationRequest request = new UserCreationRequest();
         request.setUsername("jane");
@@ -75,9 +72,7 @@ class UserServiceTest {
 
     @Test
     void createUserThrowsWhenUsernameAlreadyExists() {
-        UserService userService = new UserService();
-        ReflectionTestUtils.setField(userService, "userRepository", userRepository);
-        ReflectionTestUtils.setField(userService, "userMapper", userMapper);
+        UserService userService = new UserService(userRepository, userMapper);
 
         UserCreationRequest request = new UserCreationRequest();
         request.setUsername("jane");
