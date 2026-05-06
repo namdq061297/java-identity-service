@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Void>> handleUncategorizedException(Exception ex) {
@@ -31,16 +31,26 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Void>> handleValidationError(MethodArgumentNotValidException ex) {
-    String message = "Invalid request body";
+    ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
     if (ex.getBindingResult().getFieldError() != null && ex.getBindingResult().getFieldError().getDefaultMessage() != null) {
-      message = ex.getBindingResult().getFieldError().getDefaultMessage();
+      errorCode = resolveErrorCode(ex.getBindingResult().getFieldError().getDefaultMessage());
     }
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.value(), message);
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.getCode(), errorCode.getMessage());
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ApiResponse<Void>> handleMalformedBody(HttpMessageNotReadableException ex) {
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.value(), "Invalid request body");
+    return buildErrorResponse(HttpStatus.BAD_REQUEST,
+        ErrorCode.INVALID_REQUEST.getCode(),
+        ErrorCode.INVALID_REQUEST.getMessage());
+  }
+
+  private ErrorCode resolveErrorCode(String errorKey) {
+    try {
+      return ErrorCode.valueOf(errorKey);
+    } catch (IllegalArgumentException ignored) {
+      return ErrorCode.INVALID_REQUEST;
+    }
   }
 
   private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatus status, int code, String message) {
