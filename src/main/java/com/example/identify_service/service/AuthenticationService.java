@@ -1,34 +1,80 @@
 package com.example.identify_service.service;
 
 import com.example.identify_service.dto.request.AuthenticationRequest;
-import com.example.identify_service.dto.request.UserCreationRequest;
-import com.example.identify_service.dto.request.UserUpdateRequest;
-import com.example.identify_service.dto.response.UserResponse;
-import com.example.identify_service.entity.User;
+import com.example.identify_service.dto.request.IntrospectRequest;
+import com.example.identify_service.dto.response.AuthenticationResponse;
+import com.example.identify_service.dto.response.IntrospectResponse;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
-import com.example.identify_service.mapper.UserMapper;
 import com.example.identify_service.repository.UserRepository;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.jspecify.annotations.NonNull;
+import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.text.ParseException;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
+  @NonFinal
+  @Value("${jwt.signerKey}")
+  protected String SIGNER_KEY;
+
   UserRepository userRepository;
 
-  public boolean authenticate(AuthenticationRequest request) {
+  public AuthenticationResponse authenticate(AuthenticationRequest request) {
     var user = userRepository.findByUsername(request.getUsername())
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-    return passwordEncoder.matches(request.getPassword(), user.getPassword());
+    boolean isAuthenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
+    if (isAuthenticated) {
+      var token = generateToken(request.getUsername());
+      return AuthenticationResponse.builder()
+          .token(token)
+          .isAuthenticated(true)
+          .build();
+    } else {
+      throw new AppException(ErrorCode.UNAUTHENTICATED);
+    }
   }
+
+  private String generateToken(String username) {
+    JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
+    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+        .subject(username)
+        .issuer("com.example.identify_service")
+        .issueTime(new Date())
+        .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000)) // 1 hour expiration
+        .build();
+    Payload payload = new Payload(claimsSet.toJSONObject());
+    JWSObject jwsObject = new JWSObject(header, payload);
+    try {
+      jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+      return jwsObject.serialize();
+    } catch (JOSEException e) {
+      throw new AppException(ErrorCode.UNCATEGORIZED_ERROR);
+    }
+  }
+
+  public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
+    var token = request.getToken();
+    JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+    SignedJWT signedJWT = SignedJWT.parse(token);
+    Date expireToken = signedJWT.getJWTClaimsSet().getExpirationTime();
+    var isVerified = signedJWT.verify(verifier);
+    return IntrospectResponse.builder().isValid(isVerified && expireToken.after(new Date())).build();
+  }
+
 }

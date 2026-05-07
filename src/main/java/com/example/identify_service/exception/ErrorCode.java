@@ -12,6 +12,7 @@ public enum ErrorCode {
   FIRST_NAME_REQUIRED(1007, "First name is required"),
   LAST_NAME_REQUIRED(1008, "Last name is required"),
   USERNAME_TOO_LONG(1009, "Username must be not over 20 characters long"),
+  UNAUTHENTICATED(1010, "Unauthenticated"),
 
   ;
   private int code;
