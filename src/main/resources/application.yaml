@@ -13,5 +13,4 @@ spring:
       ddl-auto: update
     show-sql: true
 jwt:
-  signerKey: "temporary-signing-key-for-dev-only-2026-please-change"
-
+  signerKey: "temporary-signing-key-for-dev-only-2026-please-change-64-bytes-min-key"
