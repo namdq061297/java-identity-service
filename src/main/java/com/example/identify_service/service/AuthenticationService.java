@@ -4,6 +4,7 @@ import com.example.identify_service.dto.request.AuthenticationRequest;
 import com.example.identify_service.dto.request.IntrospectRequest;
 import com.example.identify_service.dto.response.AuthenticationResponse;
 import com.example.identify_service.dto.response.IntrospectResponse;
+import com.example.identify_service.entity.User;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.repository.UserRepository;
@@ -20,9 +21,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.StringJoiner;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +43,7 @@ public class AuthenticationService {
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
     boolean isAuthenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
     if (isAuthenticated) {
-      var token = generateToken(request.getUsername());
+      var token = generateToken(user);
       return AuthenticationResponse.builder()
           .token(token)
           .isAuthenticated(true)
@@ -50,13 +53,14 @@ public class AuthenticationService {
     }
   }
 
-  private String generateToken(String username) {
+  private String generateToken(User user) {
     JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-        .subject(username)
+        .subject(user.getUsername())
         .issuer("com.example.identify_service")
         .issueTime(new Date())
         .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000)) // 1 hour expiration
+        .claim("scope", buildScrope(user))
         .build();
     Payload payload = new Payload(claimsSet.toJSONObject());
     JWSObject jwsObject = new JWSObject(header, payload);
@@ -77,4 +81,12 @@ public class AuthenticationService {
     return IntrospectResponse.builder().isValid(isVerified && expireToken.after(new Date())).build();
   }
 
+  private String buildScrope(User user) {
+    StringJoiner stringJoiner = new StringJoiner(" ");
+    if (!CollectionUtils.isEmpty(user.getRoles())) {
+      user.getRoles().forEach(stringJoiner::add);
+      return stringJoiner.toString();
+    }
+    return "";
+  }
 }

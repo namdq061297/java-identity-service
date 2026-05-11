@@ -4,27 +4,27 @@ import com.example.identify_service.dto.request.UserCreationRequest;
 import com.example.identify_service.dto.request.UserUpdateRequest;
 import com.example.identify_service.dto.response.UserResponse;
 import com.example.identify_service.entity.User;
+import com.example.identify_service.enums.Roles;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.mapper.UserMapper;
 import com.example.identify_service.repository.UserRepository;
+import java.util.HashSet;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserService {
-  UserRepository userRepository;
-  UserMapper userMapper;
+  final UserRepository userRepository;
+  final UserMapper userMapper;
+  final PasswordEncoder passwordEncoder;
 
   public UserResponse createUser(UserCreationRequest req) {
     if (userRepository.existsByUsername(req.getUsername())) {
@@ -32,14 +32,17 @@ public class UserService {
     }
 
     User user = userMapper.toUserDTO(req);
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
     user.setPassword(passwordEncoder.encode(req.getPassword()));
+
+    HashSet<String> roles = new HashSet<>();
+    roles.add(Roles.USER.name());
+    user.setRoles(roles);
 
     return userMapper.toUserResponse(userRepository.save(user));
   }
 
-  public List<User> getUsers() {
-    return userRepository.findAll();
+  public List<UserResponse> getUsers() {
+    return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
   }
 
   public UserResponse getUserById(String id) {
@@ -50,10 +53,6 @@ public class UserService {
   public UserResponse updateUser(String id, @NonNull UserUpdateRequest req) {
     User user = userRepository.findById(id)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-    //    user.setFirstName(req.getFirstName());
-    //    user.setLastName(req.getLastName());
-    //    user.setDob(req.getDob());
 
     userMapper.updateUser(user, req);
 
