@@ -4,6 +4,7 @@ import com.example.identify_service.dto.request.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -24,9 +25,15 @@ class GlobalExceptionHandler {
     HttpStatus status = switch (errorCode) {
       case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
       case USER_EXISTED -> HttpStatus.CONFLICT;
+      case UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
       default -> HttpStatus.INTERNAL_SERVER_ERROR;
     };
     return buildErrorResponse(status, errorCode.getCode(), errorCode.getMessage());
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+    return buildErrorResponse(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHENTICATED.getCode(), "Forbidden");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -65,4 +72,3 @@ class GlobalExceptionHandler {
     return ResponseEntity.status(status).body(response);
   }
 }
-
