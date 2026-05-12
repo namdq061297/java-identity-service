@@ -74,7 +74,6 @@ class UserServiceTest {
     verify(userRepository).save(userCaptor.capture());
     assertThat(userCaptor.getValue().getPassword()).isEqualTo("encoded-secret");
     assertThat(userCaptor.getValue().getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
-    assertThat(userCaptor.getValue().getRoles()).containsExactly("USER");
     assertThat(createdUser.getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
     assertThat(createdUser.getRoles()).containsExactly("USER");
   }
