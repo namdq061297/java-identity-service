@@ -95,7 +95,7 @@ class UserServiceTest {
     assertThatThrownBy(() -> userService.createUser(request))
         .isInstanceOfSatisfying(AppException.class, ex -> {
           assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USER_EXISTED);
-          assertThat(ex.getMessage()).isEqualTo("Username already exists");
+          assertThat(ex.getMessage()).isEqualTo(ErrorCode.USER_EXISTED.getMessage());
         });
 
     verify(userRepository).existsByUsername("jane");

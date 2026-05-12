@@ -38,7 +38,8 @@ public class SecurityConfig {
                 .anyRequest()
                 .authenticated());
     http.oauth2ResourceServer(auth2 -> auth2.jwt(
-        jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter())));
+            jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter()))
+        .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
     http.csrf(AbstractHttpConfigurer::disable);
     return http.build();
   }

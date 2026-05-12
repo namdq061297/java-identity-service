@@ -2,6 +2,7 @@ package com.example.identify_service.exception;
 
 import com.example.identify_service.dto.request.ApiResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,13 +34,15 @@ class GlobalExceptionHandler {
 
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
-    return buildErrorResponse(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHENTICATED.getCode(), "Forbidden");
+    ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+    return buildErrorResponse(HttpStatus.FORBIDDEN, errorCode.getCode(), errorCode.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Void>> handleValidationError(MethodArgumentNotValidException ex) {
     ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
-    if (ex.getBindingResult().getFieldError() != null && ex.getBindingResult().getFieldError().getDefaultMessage() != null) {
+    if (ex.getBindingResult().getFieldError() != null && ex.getBindingResult().getFieldError()
+        .getDefaultMessage() != null) {
       errorCode = resolveErrorCode(ex.getBindingResult().getFieldError().getDefaultMessage());
     }
     return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.getCode(), errorCode.getMessage());
@@ -65,8 +68,9 @@ class GlobalExceptionHandler {
     }
   }
 
-  private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatus status, int code, String message) {
+  private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatusCode status, int code, String message) {
     ApiResponse<Void> response = new ApiResponse<>();
+    response.setHttpStatus(status.value());
     response.setCode(code);
     response.setMessage(message);
     return ResponseEntity.status(status).body(response);
