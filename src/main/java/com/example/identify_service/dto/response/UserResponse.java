@@ -1,13 +1,10 @@
 package com.example.identify_service.dto.response;
 
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
 import java.time.LocalDate;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.FieldDefaults;
 
 @Data
 @NoArgsConstructor
@@ -20,5 +17,5 @@ public class UserResponse {
   String firstName;
   String lastName;
   LocalDate dob;
-  Set<String> roles;
+  Set<RoleResponse> roles;
 }

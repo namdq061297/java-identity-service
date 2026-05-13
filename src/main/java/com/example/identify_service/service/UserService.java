@@ -8,6 +8,7 @@ import com.example.identify_service.enums.Roles;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.mapper.UserMapper;
+import com.example.identify_service.repository.RoleRepository;
 import com.example.identify_service.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ public class UserService {
   final UserRepository userRepository;
   final UserMapper userMapper;
   final PasswordEncoder passwordEncoder;
+  final RoleRepository roleRepository;
+
 
   public UserResponse createUser(UserCreationRequest req) {
     if (userRepository.existsByUsername(req.getUsername())) {
@@ -63,6 +66,9 @@ public class UserService {
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
     userMapper.updateUser(user, req);
+
+    var roles = roleRepository.findAllById(req.getRoles());
+    user.setRoles(new HashSet<>(roles));
 
     return userMapper.toUserResponse(userRepository.save(user));
   }

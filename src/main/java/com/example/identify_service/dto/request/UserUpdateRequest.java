@@ -1,11 +1,11 @@
 package com.example.identify_service.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,4 +18,5 @@ public class UserUpdateRequest {
   @NotBlank(message = "LAST_NAME_REQUIRED")
   String lastName;
   LocalDate dob;
+  List<String> roles;
 }
