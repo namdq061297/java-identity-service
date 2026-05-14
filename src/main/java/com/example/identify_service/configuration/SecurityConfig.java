@@ -31,7 +31,7 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) {
-    final String[] PUBLIC_ENDPOINT = {"/users", "/auth/token", "/auth/introspect"};
+    final String[] PUBLIC_ENDPOINT = {"/users", "/auth/token", "/auth/introspect", "/auth/refreshToken"};
     http.authorizeHttpRequests(
         req ->
             req.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINT)

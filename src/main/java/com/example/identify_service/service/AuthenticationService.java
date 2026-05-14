@@ -3,6 +3,7 @@ package com.example.identify_service.service;
 import com.example.identify_service.dto.request.AuthenticationRequest;
 import com.example.identify_service.dto.request.IntrospectRequest;
 import com.example.identify_service.dto.request.LogoutRequest;
+import com.example.identify_service.dto.request.RefreshTokenRequest;
 import com.example.identify_service.dto.response.AuthenticationResponse;
 import com.example.identify_service.dto.response.IntrospectResponse;
 import com.example.identify_service.dto.response.LogoutResponse;
@@ -136,5 +137,25 @@ public class AuthenticationService {
     }
 
     return signedJWT;
+  }
+
+  public AuthenticationResponse refreshToken(RefreshTokenRequest req) {
+    try {
+      SignedJWT signedJWT = verifyToken(req.getToken());
+      String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+      Date expireToken = signedJWT.getJWTClaimsSet().getExpirationTime();
+      InvalidatedToken invalidatedToken = InvalidatedToken.builder().id(jwtId).expiryTime(expireToken).build();
+      invalidatedTokenRepository.save(invalidatedToken);
+      var username = signedJWT.getJWTClaimsSet().getSubject();
+      var user = userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+      var token = generateToken(user);
+      return AuthenticationResponse.builder()
+          .token(token)
+          .isAuthenticated(true)
+          .build();
+      
+    } catch (JOSEException | ParseException e) {
+      throw new AppException(ErrorCode.UNAUTHENTICATED);
+    }
   }
 }
