@@ -57,8 +57,9 @@ class GlobalExceptionHandler {
 
     Map<String, Object> attributes = getConstraintAttributes(fieldError);
 //    String message = buildValidationMessage(errorCode, attributes);
-    String message = Objects.nonNull(attributes) ? mapAttributesToMessage(errorCode.getMessage(),
-        attributes) : errorCode.getMessage();
+    String message = Objects.nonNull(attributes)
+        ? mapAttributesToMessage(errorCode.getMessage(), attributes)
+        : errorCode.getMessage();
     log.info("Validation Error: {}", attributes.toString());
     return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.getCode(), message);
   }
@@ -108,14 +109,17 @@ class GlobalExceptionHandler {
   }
 
   private String mapAttributesToMessage(String message, Map<String, Object> attributes) {
-    if (attributes == null) {
-      return "";
+    if (attributes == null || attributes.isEmpty()) {
+      return message;
     }
-    String minAttribute = String.valueOf(attributes.get(MIN_ATTRIBUTE));
-    if (minAttribute != null) {
+
+    Object minAttributeValue = attributes.get(MIN_ATTRIBUTE);
+    if (minAttributeValue != null) {
+      String minAttribute = String.valueOf(minAttributeValue);
       return message.replace("{" + MIN_ATTRIBUTE + "}", minAttribute);
     }
-    return "";
+
+    return message;
   }
 
   private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatusCode status, int code, String message) {

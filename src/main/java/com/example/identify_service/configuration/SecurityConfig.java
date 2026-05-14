@@ -1,5 +1,6 @@
 package com.example.identify_service.configuration;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,8 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecurityConfig {
   @Value("${jwt.signerKey}")
   private String SIGNER_KEY;
+  @Autowired
+  private CustomJwtDecoder customJwtDecoder;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) {
@@ -38,7 +41,8 @@ public class SecurityConfig {
                 .anyRequest()
                 .authenticated());
     http.oauth2ResourceServer(auth2 -> auth2.jwt(
-            jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter()))
+            jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
+                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
         .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
     http.csrf(AbstractHttpConfigurer::disable);
     return http.build();

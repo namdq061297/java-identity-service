@@ -3,8 +3,10 @@ package com.example.identify_service.controller;
 import com.example.identify_service.dto.request.ApiResponse;
 import com.example.identify_service.dto.request.AuthenticationRequest;
 import com.example.identify_service.dto.request.IntrospectRequest;
+import com.example.identify_service.dto.request.LogoutRequest;
 import com.example.identify_service.dto.response.AuthenticationResponse;
 import com.example.identify_service.dto.response.IntrospectResponse;
+import com.example.identify_service.dto.response.LogoutResponse;
 import com.example.identify_service.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +34,17 @@ public class AuthenticationController {
   }
 
   @PostMapping("/introspect")
-  ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
+  ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
     IntrospectResponse result = authenticationService.introspect(request);
     return ApiResponse.<IntrospectResponse>builder()
+        .result(result)
+        .build();
+  }
+
+  @PostMapping("/logout")
+  ApiResponse<LogoutResponse> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+    LogoutResponse result = authenticationService.logout(request);
+    return ApiResponse.<LogoutResponse>builder()
         .result(result)
         .build();
   }

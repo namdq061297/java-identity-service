@@ -2,11 +2,15 @@ package com.example.identify_service.service;
 
 import com.example.identify_service.dto.request.AuthenticationRequest;
 import com.example.identify_service.dto.request.IntrospectRequest;
+import com.example.identify_service.dto.request.LogoutRequest;
 import com.example.identify_service.dto.response.AuthenticationResponse;
 import com.example.identify_service.dto.response.IntrospectResponse;
+import com.example.identify_service.dto.response.LogoutResponse;
+import com.example.identify_service.entity.InvalidatedToken;
 import com.example.identify_service.entity.User;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
+import com.example.identify_service.repository.InvalidatedTokenRepository;
 import com.example.identify_service.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -26,6 +30,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +41,7 @@ public class AuthenticationService {
   protected String SIGNER_KEY;
 
   UserRepository userRepository;
+  InvalidatedTokenRepository invalidatedTokenRepository;
 
   public AuthenticationResponse authenticate(AuthenticationRequest request) {
     var user = userRepository.findByUsername(request.getUsername())
@@ -59,7 +65,8 @@ public class AuthenticationService {
         .subject(user.getUsername())
         .issuer("com.example.identify_service")
         .issueTime(new Date())
-        .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000)) // 1 hour expiration
+        .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000))
+        .jwtID(String.valueOf(UUID.randomUUID()))// 1 hour expiration
         .claim("scope", buildScrope(user))
         .build();
     Payload payload = new Payload(claimsSet.toJSONObject());
@@ -73,12 +80,13 @@ public class AuthenticationService {
   }
 
   public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
-    var token = request.getToken();
-    JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-    SignedJWT signedJWT = SignedJWT.parse(token);
-    Date expireToken = signedJWT.getJWTClaimsSet().getExpirationTime();
-    var isVerified = signedJWT.verify(verifier);
-    return IntrospectResponse.builder().isValid(isVerified && expireToken.after(new Date())).build();
+    boolean isValid = true;
+    try {
+      verifyToken(request.getToken());
+    } catch (AppException e) {
+      isValid = false;
+    }
+    return IntrospectResponse.builder().isValid(isValid).build();
   }
 
   private String buildScrope(User user) {
@@ -96,5 +104,37 @@ public class AuthenticationService {
       return stringJoiner.toString();
     }
     return "";
+  }
+
+  public LogoutResponse logout(LogoutRequest request) throws ParseException, JOSEException {
+    SignedJWT signedJWT = verifyToken(request.getToken());
+
+    String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+    Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+    invalidatedTokenRepository.save(InvalidatedToken.builder()
+        .id(jwtId)
+        .expiryTime(expiryTime)
+        .build());
+
+    return LogoutResponse.builder()
+        .success(true)
+        .build();
+  }
+
+  private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+    SignedJWT signedJWT = SignedJWT.parse(token);
+
+    Date expireToken = signedJWT.getJWTClaimsSet().getExpirationTime();
+    String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+    var isVerified = signedJWT.verify(verifier);
+
+    if (!isVerified || expireToken == null || expireToken.before(new Date())
+        || jwtId == null || invalidatedTokenRepository.existsById(jwtId)) {
+      throw new AppException(ErrorCode.UNAUTHENTICATED);
+    }
+
+    return signedJWT;
   }
 }
