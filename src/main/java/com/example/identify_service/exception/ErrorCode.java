@@ -12,7 +12,7 @@ public enum ErrorCode {
   INVALID_MESSAGE_KEY(1111, "Invalid message key", HttpStatus.BAD_REQUEST),
   USER_NOT_FOUND(1001, "User not found", HttpStatus.NOT_FOUND),
   USER_EXISTED(1002, "Username already exists".toLowerCase(Locale.ROOT), HttpStatus.BAD_REQUEST),
-  INVALID_PASSWORD(1003, "Password must be at least 8 characters long", HttpStatus.BAD_REQUEST),
+  INVALID_PASSWORD(1003, "Password must be at least {min} characters long", HttpStatus.BAD_REQUEST),
   INVALID_REQUEST(1004, "Invalid request body", HttpStatus.BAD_REQUEST),
   USERNAME_REQUIRED(1005, "Username is required", HttpStatus.BAD_REQUEST),
   PASSWORD_REQUIRED(1006, "Password is required", HttpStatus.BAD_REQUEST),
@@ -21,7 +21,8 @@ public enum ErrorCode {
   USERNAME_TOO_LONG(1009, "Username must be not over 20 characters long", HttpStatus.BAD_REQUEST),
   UNAUTHENTICATED(1010, "Unauthenticated", HttpStatus.UNAUTHORIZED),
   UNAUTHORIZED(1011, "Unauthorized", HttpStatus.FORBIDDEN),
-  INVALID_DOB(1012, "Invalid date of birth", HttpStatus.BAD_REQUEST);
+  INVALID_DOB(1012, "Your age must be at least {min}", HttpStatus.BAD_REQUEST);
+
   private int code;
   private String message;
   private HttpStatusCode httpsStatusCode;

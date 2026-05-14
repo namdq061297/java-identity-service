@@ -24,6 +24,6 @@ public class UserCreationRequest {
   String firstName;
   @NotBlank(message = "LAST_NAME_REQUIRED")
   String lastName;
-  @DobConstraint(message = "INVALID_DOB", minYearOld = 10)
+  @DobConstraint(message = "INVALID_DOB", min = 10)
   LocalDate dob;
 }

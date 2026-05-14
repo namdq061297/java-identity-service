@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface DobConstraint {
   String message() default "Invalid date of birth";
 
-  int minYearOld() default 10;
+  int min() default 10;
 
   Class<?>[] groups() default {};
 

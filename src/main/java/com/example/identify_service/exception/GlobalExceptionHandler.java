@@ -1,17 +1,26 @@
 package com.example.identify_service.exception;
 
 import com.example.identify_service.dto.request.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+import java.util.Objects;
+
+@Slf4j
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+  private static final String MIN_ATTRIBUTE = "min";
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Void>> handleUncategorizedException(Exception ex) {
@@ -41,11 +50,17 @@ class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Void>> handleValidationError(MethodArgumentNotValidException ex) {
     ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
-    if (ex.getBindingResult().getFieldError() != null && ex.getBindingResult().getFieldError()
-        .getDefaultMessage() != null) {
-      errorCode = resolveErrorCode(ex.getBindingResult().getFieldError().getDefaultMessage());
+    FieldError fieldError = ex.getBindingResult().getFieldError();
+    if (fieldError != null && fieldError.getDefaultMessage() != null) {
+      errorCode = resolveErrorCode(fieldError.getDefaultMessage());
     }
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.getCode(), errorCode.getMessage());
+
+    Map<String, Object> attributes = getConstraintAttributes(fieldError);
+//    String message = buildValidationMessage(errorCode, attributes);
+    String message = Objects.nonNull(attributes) ? mapAttributesToMessage(errorCode.getMessage(),
+        attributes) : errorCode.getMessage();
+    log.info("Validation Error: {}", attributes.toString());
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.getCode(), message);
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -66,6 +81,41 @@ class GlobalExceptionHandler {
     } catch (IllegalArgumentException ignored) {
       return ErrorCode.INVALID_REQUEST;
     }
+  }
+
+  private Map<String, Object> getConstraintAttributes(FieldError fieldError) {
+    if (fieldError == null) {
+      return Map.of();
+    }
+
+    try {
+      ConstraintViolation<?> constraintViolation = fieldError.unwrap(ConstraintViolation.class);
+      return constraintViolation.getConstraintDescriptor().getAttributes();
+    } catch (IllegalArgumentException ignored) {
+      return Map.of();
+    }
+  }
+
+  private String buildValidationMessage(ErrorCode errorCode, Map<String, Object> attributes) {
+    if (errorCode == ErrorCode.INVALID_DOB) {
+      Object minYearOld = attributes.get("minYearOld");
+      if (minYearOld != null) {
+        return errorCode.getMessage() + minYearOld;
+      }
+    }
+
+    return errorCode.getMessage();
+  }
+
+  private String mapAttributesToMessage(String message, Map<String, Object> attributes) {
+    if (attributes == null) {
+      return "";
+    }
+    String minAttribute = String.valueOf(attributes.get(MIN_ATTRIBUTE));
+    if (minAttribute != null) {
+      return message.replace("{" + MIN_ATTRIBUTE + "}", minAttribute);
+    }
+    return "";
   }
 
   private ResponseEntity<ApiResponse<Void>> buildErrorResponse(HttpStatusCode status, int code, String message) {

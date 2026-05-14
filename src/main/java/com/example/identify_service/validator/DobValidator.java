@@ -7,12 +7,12 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 public class DobValidator implements ConstraintValidator<DobConstraint, LocalDate> {
-  private int minYearOld;
+  private int min;
 
   @Override
   public void initialize(DobConstraint constraintAnnotation) {
     ConstraintValidator.super.initialize(constraintAnnotation);
-    this.minYearOld = constraintAnnotation.minYearOld();
+    this.min = constraintAnnotation.min();
   }
 
   @Override
@@ -21,7 +21,7 @@ public class DobValidator implements ConstraintValidator<DobConstraint, LocalDat
       return true;
     }
     long years = ChronoUnit.YEARS.between(value, LocalDate.now());
-    if (years >= minYearOld) {
+    if (years >= min) {
       return true;
     }
     return false;

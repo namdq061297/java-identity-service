@@ -8,13 +8,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.identify_service.dto.request.UserCreationRequest;
+import com.example.identify_service.dto.response.RoleResponse;
 import com.example.identify_service.dto.response.UserResponse;
+import com.example.identify_service.entity.Role;
 import com.example.identify_service.entity.User;
 import com.example.identify_service.exception.AppException;
 import com.example.identify_service.exception.ErrorCode;
 import com.example.identify_service.mapper.UserMapper;
+import com.example.identify_service.repository.RoleRepository;
 import com.example.identify_service.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,9 +39,12 @@ class UserServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock
+  private RoleRepository roleRepository;
+
   @Test
   void createUserMapsDobFromRequest() {
-    UserService userService = new UserService(userRepository, userMapper, passwordEncoder);
+    UserService userService = new UserService(userRepository, userMapper, passwordEncoder, roleRepository);
 
     UserCreationRequest request = new UserCreationRequest();
     request.setUsername("jane");
@@ -58,11 +65,14 @@ class UserServiceTest {
     expectedResponse.setFirstName("Jane");
     expectedResponse.setLastName("Doe");
     expectedResponse.setDob(LocalDate.of(2000, 1, 2));
-    expectedResponse.setRoles(Set.of("USER"));
+    expectedResponse.setRoles(Set.of(RoleResponse.builder().name("USER").build()));
+
+    Role userRole = Role.builder().name("USER").description("Default user role").build();
 
     when(userRepository.existsByUsername("jane")).thenReturn(false);
     when(userMapper.toUserDTO(request)).thenReturn(userEntity);
     when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
+    when(roleRepository.findById("USER")).thenReturn(Optional.of(userRole));
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userMapper.toUserResponse(any(User.class))).thenReturn(expectedResponse);
 
@@ -71,16 +81,18 @@ class UserServiceTest {
     ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
     verify(userRepository).existsByUsername("jane");
     verify(passwordEncoder).encode("secret");
+    verify(roleRepository).findById("USER");
     verify(userRepository).save(userCaptor.capture());
     assertThat(userCaptor.getValue().getPassword()).isEqualTo("encoded-secret");
     assertThat(userCaptor.getValue().getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
+    assertThat(userCaptor.getValue().getRoles()).containsExactly(userRole);
     assertThat(createdUser.getDob()).isEqualTo(LocalDate.of(2000, 1, 2));
-    assertThat(createdUser.getRoles()).containsExactly("USER");
+    assertThat(createdUser.getRoles()).extracting(RoleResponse::getName).containsExactly("USER");
   }
 
   @Test
   void createUserThrowsWhenUsernameAlreadyExists() {
-    UserService userService = new UserService(userRepository, userMapper, passwordEncoder);
+    UserService userService = new UserService(userRepository, userMapper, passwordEncoder, roleRepository);
 
     UserCreationRequest request = new UserCreationRequest();
     request.setUsername("jane");
