@@ -1,5 +1,6 @@
 package com.example.identify_service.dto.request;
 
+import com.example.identify_service.validator.DobConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -23,5 +24,6 @@ public class UserCreationRequest {
   String firstName;
   @NotBlank(message = "LAST_NAME_REQUIRED")
   String lastName;
+  @DobConstraint(message = "INVALID_DOB", minYearOld = 10)
   LocalDate dob;
 }

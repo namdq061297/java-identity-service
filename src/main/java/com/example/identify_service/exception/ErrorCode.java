@@ -21,7 +21,7 @@ public enum ErrorCode {
   USERNAME_TOO_LONG(1009, "Username must be not over 20 characters long", HttpStatus.BAD_REQUEST),
   UNAUTHENTICATED(1010, "Unauthenticated", HttpStatus.UNAUTHORIZED),
   UNAUTHORIZED(1011, "Unauthorized", HttpStatus.FORBIDDEN),
-  ;
+  INVALID_DOB(1012, "Invalid date of birth", HttpStatus.BAD_REQUEST);
   private int code;
   private String message;
   private HttpStatusCode httpsStatusCode;

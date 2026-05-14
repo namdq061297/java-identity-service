@@ -1,5 +1,6 @@
 package com.example.identify_service.dto.request;
 
+import com.example.identify_service.validator.DobConstraint;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -17,6 +18,7 @@ public class UserUpdateRequest {
   String firstName;
   @NotBlank(message = "LAST_NAME_REQUIRED")
   String lastName;
+  @DobConstraint(message = "INVALID_DOB", minYearOld = 10)
   LocalDate dob;
   List<String> roles;
 }
