@@ -14,3 +14,5 @@ spring:
     show-sql: true
 jwt:
   signerKey: "temporary-signing-key-for-dev-only-2026-please-change-64-bytes-min-key"
+  expirationTokenTime: 3600 # seconds
+  expirationRefreshTokenTime: 7200 # seconds
